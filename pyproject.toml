@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scivcd"
+version = "0.1.0"
+description = "Visual Conflict Detector for scientific matplotlib figures — publication-grade linter with severity grading, complexity-routed checks, auto-fix, and multimodal audit reports."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "scivcd contributors" },
+]
+keywords = ["matplotlib", "visualization", "linter", "publication", "accessibility", "colorblind"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+    "matplotlib>=3.6",
+    "numpy>=1.23",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
+[project.scripts]
+scivcd = "scivcd.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/PeterPonyu/scivcd"
+Issues = "https://github.com/PeterPonyu/scivcd/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["scivcd*"]
+
+[tool.setuptools.package-data]
+scivcd = ["fonts/*.ttf"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
