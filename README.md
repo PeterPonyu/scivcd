@@ -1,12 +1,11 @@
 # scivcd
 
-**Scientific figure Visual Conflict Detector** — a publication-grade matplotlib figure linter with
-severity grading, complexity-routed checks, font auto-fix, layout tightening, and content-aware
-audits.
+**Scientific figure Visual Conflict Detector** — a matplotlib figure linter with
+severity grading, adaptive check routing, font auto-fix, layout tightening, and
+content-aware audits.
 
-Originally developed as an internal tool for the CLOP-DiT paper revision; extracted here as a
-standalone package so any Python visualization project can run the same 36-pass, 4-severity
-audit against its figures.
+scivcd is a standalone package for running multi-pass figure audits against
+matplotlib outputs in Python visualization workflows.
 
 ## What it does
 
@@ -123,13 +122,6 @@ severity_level_for({"type": "bold_usage"})               # → "INFO"
 ```
 
 Override via `FigurePolicy.severity_overrides`.
-
-## Origin
-
-Extracted from the CLOP-DiT paper's `revision/major` branch, commit
-`cf5de41 vcd: adaptive routing, autofix, tightening, content-aware checks`. The original VCD
-package is referenced in the CLOP-DiT submission's `revision/vcd_coverage_audit.md` and
-`revision/vcd_multimodal_audit.md`.
 
 ## License
 
