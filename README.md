@@ -36,6 +36,17 @@ cd scivcd
 pip install .
 ```
 
+## Development
+
+```bash
+# Run the test suite
+pytest -q
+
+# Build sdist + wheel
+python -m pip install build
+python -m build
+```
+
 ## Quick start
 
 ```python
