@@ -410,6 +410,25 @@ def test_annotation_crowding_ignores_panel_labels_and_ticks():
     assert not any(i["type"] == "annotation_crowding" for i in issues)
 
 
+def test_annotation_crowding_handles_inverted_axes():
+    """Inverted y-axis (e.g. heatmap with (N, -0.5)) must still produce
+    valid axes-fraction coordinates so crowded labels are still detected."""
+    from scivcd.vcd_checks_content import check_annotation_crowding
+    fig, ax = plt.subplots()
+    ax.set_xlim(0, 10)
+    ax.set_ylim(49.5, -0.5)  # inverted (imshow-style)
+    # Four annotations packed near data-coordinate (1, 1) — upper-left in
+    # display space given the inverted y.
+    for dx, label in zip([0.0, 0.2, 0.4, 0.6], ["p1", "p2", "p3", "p4"]):
+        ax.annotate(label, xy=(1.0 + dx, 1.0 + dx))
+    fig.canvas.draw()
+    issues = check_annotation_crowding(fig)
+    plt.close(fig)
+    assert any(i["type"] == "annotation_crowding" for i in issues), (
+        "inverted axes must still flag dense clusters"
+    )
+
+
 def test_annotation_crowding_registered_in_severity_policy():
     from scivcd.vcd_policy import severity_level_for
     assert severity_level_for({"type": "annotation_crowding", "severity": "warning"}) == "MAJOR"

@@ -200,40 +200,21 @@ def check_annotation_crowding(
     bin_fraction: float = 0.15,
     exclude_titles: bool = True,
 ) -> List[dict]:
-    """Flag axes where >=``min_annotations`` ad-hoc text artists fall inside
-    the same local axes-fraction bin of size ``bin_fraction`` x ``bin_fraction``.
+    """Flag axes where >= ``min_annotations`` ad-hoc texts fall inside the
+    same ``bin_fraction`` x ``bin_fraction`` axes-fraction bin.
 
-    Distilled from the scivcd 2026-04-17 layout review: offset-heuristic
-    self-organising labels (``annotate`` with automatic offset) stop being
-    readable once three or more land in the same local region — the labels
-    collide and the leader lines cross. The geometric overlap checks miss
-    this because any two labels may be individually non-overlapping even
-    while the cluster as a whole is illegible.
+    Distilled from the scivcd 2026-04-17 layout review: once three or more
+    callouts self-organise into the same local region, labels collide and
+    leader lines cross even though each pair may be individually
+    non-overlapping. Geometric overlap checks miss that pattern.
 
-    The rule only looks at ``ax.texts`` (annotations the author added
-    explicitly). It ignores titles, axis labels, tick labels, and panel
-    labels so legitimate single-letter panel tags (a, b, c, ...) do not
-    trigger the rule.
+    Only ``ax.texts`` are considered (titles, axis labels, ticks, and
+    legends are ignored). When ``exclude_titles`` is True, single-character
+    texts are skipped so panel-label tags (a/b/c) do not false-trigger.
 
-    Parameters
-    ----------
-    fig : matplotlib.figure.Figure
-    min_annotations : int
-        Cluster size that triggers a finding. Default 3 matches the
-        layout-review recommendation.
-    bin_fraction : float
-        Side length of the axes-fraction bin used to detect local density.
-        Default 0.15 treats any 15% x 15% patch as a single "local region".
-    exclude_titles : bool
-        If True, drop single-character texts (panel labels) and any text
-        whose axes-fraction position is above the axes top (titles).
-
-    Returns
-    -------
-    list[dict]
-        One finding per over-crowded axes/bin, with ``axes_id``, ``bin``
-        (x_frac, y_frac integer-indexed), ``n_annotations``, and
-        ``effective_density`` (annotations per unit axes-fraction area).
+    Each finding carries ``axes_id``, ``bin`` (bin-index pair),
+    ``n_annotations``, and ``effective_density`` (annotations per unit
+    axes-fraction area).
     """
     issues: List[dict] = []
     if bin_fraction <= 0.0 or bin_fraction > 1.0:
@@ -246,17 +227,17 @@ def check_annotation_crowding(
         if len(text_artists) < min_annotations:
             continue
 
-        # Convert each text artist's position to axes fraction coords. A text
-        # created with ``ax.annotate(..., xy=data)`` carries data-coordinate
-        # positions; normalise to axes-fraction space so figures with
-        # different data ranges share a uniform crowding threshold.
-        points: list[tuple[float, float, Text]] = []
-        xlim = ax.get_xlim()
-        ylim = ax.get_ylim()
-        dx = xlim[1] - xlim[0]
-        dy = ylim[1] - ylim[0]
+        # Normalise positions to axes-fraction space. Use sorted lims so
+        # inverted axes (e.g., imshow with (50, -0.5)) still produce valid
+        # fractions in [0, 1].
+        x_lo, x_hi = sorted(ax.get_xlim())
+        y_lo, y_hi = sorted(ax.get_ylim())
+        dx = x_hi - x_lo
+        dy = y_hi - y_lo
         if dx == 0 or dy == 0:
             continue
+
+        points: list[tuple[float, float, Text]] = []
         for t in text_artists:
             raw = t.get_text().strip()
             if not raw:
@@ -267,15 +248,11 @@ def check_annotation_crowding(
                 x, y = t.get_position()
             except Exception:
                 continue
-            coords = t.get_transform()
-            # Only honour annotations anchored in data or axes-fraction space.
-            # Figure-fraction texts are not per-axes crowding candidates.
-            transform_name = str(getattr(coords, "__class__", "")).lower()
-            if "axes" in transform_name:
+            if t.get_transform() is ax.transAxes:
                 x_frac, y_frac = float(x), float(y)
             else:
-                x_frac = (float(x) - xlim[0]) / dx
-                y_frac = (float(y) - ylim[0]) / dy
+                x_frac = (float(x) - x_lo) / dx
+                y_frac = (float(y) - y_lo) / dy
             if exclude_titles and y_frac > 1.02:
                 continue
             if not (-0.02 <= x_frac <= 1.02 and -0.02 <= y_frac <= 1.02):
@@ -285,9 +262,8 @@ def check_annotation_crowding(
         if len(points) < min_annotations:
             continue
 
-        # Bin by axes-fraction quantized to the requested bin size.
-        bins: dict[tuple[int, int], list] = {}
         n_bins = max(1, int(round(1.0 / bin_fraction)))
+        bins: dict[tuple[int, int], list] = {}
         for x_frac, y_frac, t in points:
             bx = min(n_bins - 1, max(0, int(x_frac * n_bins)))
             by = min(n_bins - 1, max(0, int(y_frac * n_bins)))
@@ -297,7 +273,6 @@ def check_annotation_crowding(
             if len(cluster) < min_annotations:
                 continue
             samples = [str(t.get_text())[:30] for _, _, t in cluster[:3]]
-            effective_density = len(cluster) / (bin_fraction * bin_fraction)
             title = ax.get_title() or ""
             issues.append({
                 "type": "annotation_crowding",
@@ -313,7 +288,7 @@ def check_annotation_crowding(
                 "axes_id": axes_idx,
                 "bin": (bx, by),
                 "n_annotations": len(cluster),
-                "effective_density": effective_density,
+                "effective_density": len(cluster) / (bin_fraction * bin_fraction),
             })
 
     return issues
