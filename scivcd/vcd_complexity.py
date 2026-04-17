@@ -72,6 +72,7 @@ _ALL_PASSES: List[str] = [
     "minimum_font_size",
     "colorblind_safety_pub",
     "effective_dpi",
+    "annotation_crowding",
 ]
 
 
@@ -94,6 +95,7 @@ PROFILES: dict[Complexity, List[str]] = {
         "fontsize_adequacy",
         "minimum_font_size",
         "effective_dpi",
+        "annotation_crowding",
     ],
     Complexity.COMPOSED: list(_ALL_PASSES),  # everything
 }

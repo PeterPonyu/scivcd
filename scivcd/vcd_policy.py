@@ -90,6 +90,9 @@ _DEFAULT_SEVERITY_BY_TYPE: Dict[str, str] = {
     "label_string_ellipsis": SEVERITY_MINOR,
     "overlapping_series_values": SEVERITY_INFO,
     "duplicate_tick_labels": SEVERITY_INFO,
+
+    # --- Annotation-crowding (scivcd follow-up 2026-04-17) ---
+    "annotation_crowding": SEVERITY_MAJOR,
 }
 
 

@@ -77,6 +77,7 @@ from .vcd_checks_content import (
     check_label_string_ellipsis as _check_label_string_ellipsis,
     check_overlapping_series_values as _check_overlapping_series_values,
     check_duplicate_tick_labels as _check_duplicate_tick_labels,
+    check_annotation_crowding as _check_annotation_crowding,
 )
 from .vcd_config import (
     MIN_PT,
@@ -313,6 +314,12 @@ def detect_all_conflicts(
         issues.extend(_check_duplicate_tick_labels(fig))
     except Exception:
         pass
+    # Pass 40: annotation crowding (post-2026-04-17 scivcd follow-up rule)
+    if _run("annotation_crowding"):
+        try:
+            issues.extend(_check_annotation_crowding(fig))
+        except Exception:
+            pass
 
     issues = sort_issues(issues)
 

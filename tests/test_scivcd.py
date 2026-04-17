@@ -358,3 +358,65 @@ def test_duplicate_tick_labels_detected():
     issues = check_duplicate_tick_labels(fig)
     plt.close(fig)
     assert any(i["type"] == "duplicate_tick_labels" for i in issues)
+
+
+# ---------------------------------------------------------------------------
+# Annotation-crowding check (scivcd follow-up 2026-04-17)
+# ---------------------------------------------------------------------------
+
+def test_annotation_crowding_flags_dense_cluster():
+    from scivcd.vcd_checks_content import check_annotation_crowding
+    fig, ax = plt.subplots()
+    # Four annotations packed into a single axes-fraction bin (upper-right).
+    for dx, label in zip([0.01, 0.02, 0.03, 0.04], ["outlier1", "outlier2", "outlier3", "outlier4"]):
+        ax.annotate(label, xy=(0.88 + dx * 0.1, 0.88 + dx * 0.1), xycoords="axes fraction")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    fig.canvas.draw()
+    issues = check_annotation_crowding(fig)
+    plt.close(fig)
+    crowding = [i for i in issues if i["type"] == "annotation_crowding"]
+    assert crowding, "expected at least one annotation_crowding finding"
+    assert crowding[0]["n_annotations"] >= 3
+    assert crowding[0]["severity_level"] == "MAJOR"
+
+
+def test_annotation_crowding_passes_on_sparse_annotations():
+    from scivcd.vcd_checks_content import check_annotation_crowding
+    fig, ax = plt.subplots()
+    # Four annotations spread across the four quadrants — no single bin holds >=3.
+    for x, y, label in [(0.1, 0.1, "bl"), (0.9, 0.1, "br"), (0.1, 0.9, "tl"), (0.9, 0.9, "tr")]:
+        ax.annotate(label, xy=(x, y), xycoords="axes fraction")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    fig.canvas.draw()
+    issues = check_annotation_crowding(fig)
+    plt.close(fig)
+    assert not any(i["type"] == "annotation_crowding" for i in issues)
+
+
+def test_annotation_crowding_ignores_panel_labels_and_ticks():
+    from scivcd.vcd_checks_content import check_annotation_crowding
+    fig, ax = plt.subplots()
+    # Single-character panel labels (a, b, c) clustered in the upper-left should
+    # NOT trigger the rule — they are legitimate panel tags, not ad-hoc callouts.
+    for label in ["a", "b", "c", "d"]:
+        ax.text(0.02, 0.97, label, transform=ax.transAxes)
+    ax.set_xticks([0, 1])
+    ax.set_yticks([0, 1])
+    fig.canvas.draw()
+    issues = check_annotation_crowding(fig)
+    plt.close(fig)
+    assert not any(i["type"] == "annotation_crowding" for i in issues)
+
+
+def test_annotation_crowding_registered_in_severity_policy():
+    from scivcd.vcd_policy import severity_level_for
+    assert severity_level_for({"type": "annotation_crowding", "severity": "warning"}) == "MAJOR"
+
+
+def test_annotation_crowding_in_compound_and_composed_profiles():
+    from scivcd.vcd_complexity import PROFILES, Complexity
+    assert "annotation_crowding" in PROFILES[Complexity.COMPOUND]
+    assert "annotation_crowding" in PROFILES[Complexity.COMPOSED]
+    assert "annotation_crowding" not in PROFILES[Complexity.SIMPLE]
