@@ -478,3 +478,23 @@ __all__ = [
     "diagnose",
     "group_by_category",
 ]
+
+# --- Phase 1 modern SciVCD API (added for package/lifecycle bridge) ---
+try:  # keep legacy imports usable even if optional modern surface changes
+    from scivcd.core import (
+        Category, CheckSpec, Finding, ScivcdConfig, Severity, Stage,
+        iter_checks, register, unregister,
+    )
+    from scivcd.exemptions import exempt, ignore, is_exempt
+    from scivcd.api import Report, audit_export, check, install, uninstall
+    from scivcd.composed_lifecycle import (
+        SCHEMA_VERSION as COMPOSED_LIFECYCLE_SCHEMA_VERSION,
+        ComponentLink,
+        build_composed_lifecycle_sidecar,
+        make_composed_report,
+        project_component_findings,
+        write_composed_lifecycle_sidecar,
+    )
+    from scivcd import checks as _modern_checks  # noqa: F401
+except Exception:  # pragma: no cover - legacy-only fallback
+    pass
